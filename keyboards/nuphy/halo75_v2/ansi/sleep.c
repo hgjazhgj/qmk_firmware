@@ -37,59 +37,35 @@ void Sleep_Handle(void) {
     static uint32_t delay_step_timer = 0;
     static uint8_t  usb_suspend_debounce = 0;
     static uint32_t rf_disconnect_time = 0;
+    static bool     rgb_idle = false;
 
     /* 50ms interval */
     if (timer_elapsed32(delay_step_timer) < 50) return;
     delay_step_timer = timer_read32();
 
-    // sleep process
+    // Idle process: switch off only the RGB drivers.  Keep the MCU, radio and
+    // USB connection running so the first key after an idle timeout is sent
+    // immediately instead of being consumed by a wake/reconnect sequence.
     if (f_goto_sleep) {
         f_goto_sleep = 0;
 
         if(f_dev_sleep_enable) {
-            if (dev_info.rf_state == RF_CONNECT)
-                uart_send_cmd(CMD_SET_CONFIG, 5, 5);
-            else
-                uart_send_cmd(CMD_SLEEP, 5, 5);
-
-            // power off led
-            gpio_write_pin_low(DC_BOOST_PIN);
             gpio_write_pin_low(RGB_DRIVER_SDB1);
             gpio_write_pin_low(RGB_DRIVER_SDB2);
+            rgb_idle = true;
         }
-
-        f_wakeup_prepare = 1;
     }
 
-    // wakeup check
-    if (f_wakeup_prepare && (no_act_time < 10)) {
-        f_wakeup_prepare = 0;
-
-        gpio_write_pin_high(DC_BOOST_PIN);
+    // Restore the RGB drivers as soon as normal key activity resets the idle
+    // counter.  No radio handshake or USB restart is required.
+    if (rgb_idle && (no_act_time < 10)) {
         gpio_write_pin_high(RGB_DRIVER_SDB1);
         gpio_write_pin_high(RGB_DRIVER_SDB2);
-
-        uart_send_cmd(CMD_HAND, 0, 1);
-
-        if (dev_info.link_mode == LINK_USB) {
-            #define USB_GETSTATUS_REMOTE_WAKEUP_ENABLED (2U)
-            if ((USB_DRIVER.status & USB_GETSTATUS_REMOTE_WAKEUP_ENABLED) ) {
-                usb_lld_wakeup_host(&USB_DRIVER);
-                wait_ms(50);
-                uint8_t timeout = 10;
-                while ((USB_DRIVER.state == USB_SUSPENDED) && (timeout--)) {
-                    usbWakeupHost(&USB_DRIVER);
-                    restart_usb_driver(&USB_DRIVER);
-                    wait_ms(50);
-                }
-                extern void m_break_all_key(void);
-                m_break_all_key();
-            }
-        }
+        rgb_idle = false;
     }
 
     // sleep check
-    if (f_goto_sleep || f_wakeup_prepare)
+    if (f_goto_sleep || rgb_idle)
         return;
     if (dev_info.link_mode == LINK_USB) {
         if (USB_DRIVER.state == USB_SUSPENDED) {
