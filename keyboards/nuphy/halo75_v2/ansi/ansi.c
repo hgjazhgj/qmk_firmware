@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "rf_driver.h"
 
 
-user_config_t user_config;  
+user_config_t user_config;
 DEV_INFO_STRUCT dev_info =
     {
         .rf_baterry = 100,
@@ -28,53 +28,54 @@ DEV_INFO_STRUCT dev_info =
         .rf_state   = RF_IDLE,
 };
 
-uint16_t rf_linking_time            = 0;   
-uint16_t rf_link_show_time          = 0; 
-uint8_t rf_blink_cnt                = 0;     
-uint16_t no_act_time                = 0;  
+uint16_t rf_linking_time            = 0;
+uint16_t rf_link_show_time          = 0;
+uint8_t rf_blink_cnt                = 0;
+uint16_t no_act_time                = 0;
 host_driver_t *m_host_driver        = 0;
-uint16_t dev_reset_press_delay      = 0; 
-uint16_t rf_sw_press_delay          = 0; 
-uint16_t rgb_test_press_delay       = 0; 
+uint16_t dev_reset_press_delay      = 0;
+uint16_t rf_sw_press_delay          = 0;
+uint16_t rgb_test_press_delay       = 0;
 uint8_t rf_sw_temp                  = 0;
 uint8_t rgb_light_old               = 0;
+uint8_t rgb_mode_before_bat_show    = 0;
 uint8_t host_mode;
 
-extern uint8_t side_mode_a;  
-extern uint8_t side_light; 
-extern uint8_t side_speed; 
-extern uint8_t side_rgb;   
+extern uint8_t side_mode_a;
+extern uint8_t side_light;
+extern uint8_t side_speed;
+extern uint8_t side_rgb;
 extern uint8_t side_colour;
 extern report_keyboard_t *keyboard_report;
 extern report_nkro_t *nkro_report;
-extern uint8_t side_mode_b;  
+extern uint8_t side_mode_b;
 extern uint8_t uart_bit_report_buf[32];
 extern uint8_t bitkb_report_buf[32];
-extern uint8_t bytekb_report_buf[8]; 
+extern uint8_t bytekb_report_buf[8];
 
-bool f_uart_ack         = 0; 
-bool f_bat_show         = 0; 
+bool f_uart_ack         = 0;
+bool f_bat_show         = 0;
 bool f_bat_hold         = 0;
 bool f_chg_show         = 1;
 bool f_sys_show         = 0;
-bool f_sleep_show       = 0; 
-bool f_usb_offline      = 0; 
+bool f_sleep_show       = 0;
+bool f_usb_offline      = 0;
 bool f_rf_read_data_ok  = 0;
 bool f_rf_sts_sysc_ok   = 0;
 bool f_rf_new_adv_ok    = 0;
 bool f_rf_reset         = 0;
-bool f_send_channel     = 0; 
-bool f_rf_hand_ok       = 0;  
-bool f_rf_send_bitkb    = 0; 
-bool f_rf_send_byte     = 0; 
-bool f_rf_send_consume  = 0; 
+bool f_send_channel     = 0;
+bool f_rf_hand_ok       = 0;
+bool f_rf_send_bitkb    = 0;
+bool f_rf_send_byte     = 0;
+bool f_rf_send_consume  = 0;
 bool f_wakeup_prepare   = 0;
-bool f_dial_sw_init_ok  = 0; 
-bool f_goto_sleep       = 0; 
-bool f_rf_sw_press      = 0; 
-bool f_dev_reset_press  = 0; 
-bool f_rgb_test_press   = 0; 
-bool f_win_lock         = 0; 
+bool f_dial_sw_init_ok  = 0;
+bool f_goto_sleep       = 0;
+bool f_rf_sw_press      = 0;
+bool f_dev_reset_press  = 0;
+bool f_rgb_test_press   = 0;
+bool f_win_lock         = 0;
 
 void rf_device_init(void);
 void rf_uart_init(void);
@@ -147,8 +148,8 @@ void long_press_key(void)
 
             uint8_t timeout = 5;
             while (timeout--) {
-                uart_send_cmd(CMD_NEW_ADV, 0, 1); 
-                wait_ms(20);                     
+                uart_send_cmd(CMD_NEW_ADV, 0, 1);
+                wait_ms(20);
                 uart_receive_pro();
                 if (f_rf_new_adv_ok) break;
             }
@@ -172,23 +173,23 @@ void long_press_key(void)
                 dev_info.ble_channel = LINK_BT_1;
             }
 
-            uart_send_cmd(CMD_SET_LINK, 10, 10);   
-            wait_ms(500);                           
-            uart_send_cmd(CMD_CLR_DEVICE, 10, 10); 
+            uart_send_cmd(CMD_SET_LINK, 10, 10);
+            wait_ms(500);
+            uart_send_cmd(CMD_CLR_DEVICE, 10, 10);
 
-            eeconfig_init();     
-            device_reset_show(); 
-            device_reset_init(); 
+            eeconfig_init();
+            device_reset_show();
+            device_reset_init();
 
             keymap_config.no_gui = 0;
             f_win_lock = 0;
 
             if (dev_info.sys_sw_state == SYS_SW_MAC) {
                 default_layer_set(1 << 0);  // MAC
-                keymap_config.nkro = 0;     
+                keymap_config.nkro = 0;
             } else {
                 default_layer_set(1 << 2);  // WIN
-                keymap_config.nkro = 1;   
+                keymap_config.nkro = 1;
             }
         }
     } else {
@@ -199,7 +200,7 @@ void long_press_key(void)
         rgb_test_press_delay++;
         if (rgb_test_press_delay >= RGB_TEST_PRESS_DELAY) {
             f_rgb_test_press = 0;
-            rgb_test_show();  
+            rgb_test_show();
         }
     } else {
         rgb_test_press_delay = 0;
@@ -211,9 +212,9 @@ void long_press_key(void)
  */
 void m_break_all_key(void)
 {
-    
+
     uint8_t report_buf[16];
-    bool nkro_temp = keymap_config.nkro; 
+    bool nkro_temp = keymap_config.nkro;
 
     clear_weak_mods();
     clear_mods();
@@ -292,12 +293,12 @@ void dial_sw_scan(void)
     if (gpio_read_pin(SYS_MODE_PIN)) dial_scan |= 0X02;
 
     if (dial_save != dial_scan) {
-        m_break_all_key();          
+        m_break_all_key();
         dial_save         = dial_scan;
-        no_act_time         = 0;   
-        rf_linking_time     = 0;  
-        debounce            = 25;  
-        f_dial_sw_init_ok   = 0;  
+        no_act_time         = 0;
+        rf_linking_time     = 0;
+        debounce            = 25;
+        f_dial_sw_init_ok   = 0;
         return;
     } else if (debounce) {
         debounce--;
@@ -317,26 +318,26 @@ void dial_sw_scan(void)
     if (dial_scan & 0x02) {
         if (dev_info.sys_sw_state != SYS_SW_WIN) {
             f_sys_show = 1;
-            default_layer_set(1 << 2);  
+            default_layer_set(1 << 2);
             dev_info.sys_sw_state = SYS_SW_WIN;
             keymap_config.no_gui  = f_win_lock;
-            m_break_all_key();  
+            m_break_all_key();
         }
-        keymap_config.nkro = 1; 
+        keymap_config.nkro = 1;
     } else {
         if (dev_info.sys_sw_state != SYS_SW_MAC) {
             f_sys_show = 1;
             default_layer_set(1 << 0);
             dev_info.sys_sw_state = SYS_SW_MAC;
             f_win_lock            = keymap_config.no_gui;
-            m_break_all_key();  
+            m_break_all_key();
         }
         keymap_config.nkro   = 0;
         keymap_config.no_gui = 0;
     }
 
     if (f_dial_sw_init_ok == 0) {
-        f_dial_sw_init_ok = 1;  
+        f_dial_sw_init_ok = 1;
         flag_power_on     = 0;
 
         if (dev_info.link_mode != LINK_USB) {
@@ -358,8 +359,8 @@ void m_power_on_dial_sw_scan(void)
 
     f_win_lock = 0;
 
-    gpio_set_pin_input_high(DEV_MODE_PIN);   
-    gpio_set_pin_input_high(SYS_MODE_PIN);  
+    gpio_set_pin_input_high(DEV_MODE_PIN);
+    gpio_set_pin_input_high(SYS_MODE_PIN);
 
     for(debounce=0; debounce<10; debounce++) {
         dial_scan_dev = 0;
@@ -385,22 +386,22 @@ void m_power_on_dial_sw_scan(void)
             switch_dev_link(dev_info.rf_channel);
         }
     }
-    // WIN/MAC 
+    // WIN/MAC
     if (dial_scan_sys) {
         if (dev_info.sys_sw_state != SYS_SW_WIN) {
             default_layer_set(1 << 2);  // WIN
             dev_info.sys_sw_state = SYS_SW_WIN;
-            keymap_config.nkro    = 1;  
-            m_break_all_key();  
+            keymap_config.nkro    = 1;
+            m_break_all_key();
         }
     } else {
         if (dev_info.sys_sw_state != SYS_SW_MAC) {
             default_layer_set(1 << 0);  // MAC
             dev_info.sys_sw_state = SYS_SW_MAC;
-            keymap_config.nkro    = 0; 
+            keymap_config.nkro    = 0;
             f_win_lock            = keymap_config.no_gui;
             keymap_config.no_gui  = 0;
-            m_break_all_key();  
+            m_break_all_key();
         }
     }
 }
@@ -418,7 +419,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case RF_DFU:
             if (record->event.pressed) {
                 if (dev_info.link_mode != LINK_USB) return false;
-                uart_send_cmd(CMD_RF_DFU, 10, 20); 
+                uart_send_cmd(CMD_RF_DFU, 10, 20);
             }
             return false;
 
@@ -444,7 +445,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                     dev_info.link_mode   = rf_sw_temp;
                     dev_info.rf_channel  = rf_sw_temp;
                     dev_info.ble_channel = rf_sw_temp;
-                    uart_send_cmd(CMD_SET_LINK, 10, 20);  
+                    uart_send_cmd(CMD_SET_LINK, 10, 20);
                 }
             }
             return false;
@@ -462,7 +463,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                     dev_info.link_mode   = rf_sw_temp;
                     dev_info.rf_channel  = rf_sw_temp;
                     dev_info.ble_channel = rf_sw_temp;
-                    uart_send_cmd(CMD_SET_LINK, 10, 20); 
+                    uart_send_cmd(CMD_SET_LINK, 10, 20);
                 }
             }
             return false;
@@ -480,7 +481,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                     dev_info.link_mode   = rf_sw_temp;
                     dev_info.rf_channel  = rf_sw_temp;
                     dev_info.ble_channel = rf_sw_temp;
-                    uart_send_cmd(CMD_SET_LINK, 10, 20);  
+                    uart_send_cmd(CMD_SET_LINK, 10, 20);
                 }
             }
             return false;
@@ -498,7 +499,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                     dev_info.link_mode   = rf_sw_temp;
                     dev_info.rf_channel  = rf_sw_temp;
                     dev_info.ble_channel = rf_sw_temp;
-                    uart_send_cmd(CMD_SET_LINK, 10, 20); 
+                    uart_send_cmd(CMD_SET_LINK, 10, 20);
                 }
             }
             return false;
@@ -628,7 +629,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case DEV_RESET:
             if (record->event.pressed) {
                 f_dev_reset_press = 1;
-                m_break_all_key(); 
+                m_break_all_key();
             } else {
                 f_dev_reset_press = 0;
             }
@@ -639,13 +640,16 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 if(f_dev_sleep_enable) f_dev_sleep_enable = false;
                 else f_dev_sleep_enable = true;
                 f_sleep_show       = 1;
-                eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));  
+                eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
             }
             return false;
 
         case BAT_SHOW:
             if (record->event.pressed) {
-                f_bat_hold = !f_bat_hold;
+                rgb_mode_before_bat_show = rgb_matrix_get_mode();
+                rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_battery_link_status);
+            } else if (f_bat_show) {
+                rgb_matrix_mode_noeeprom(rgb_mode_before_bat_show);
             }
             return false;
 
@@ -655,7 +659,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
         case RM_TOGG:
             if (record->event.pressed) {
-                rgb_matrix_enable();  
+                rgb_matrix_enable();
                 if(rgb_matrix_config.hsv.v)
                 {
                     rgb_light_old = rgb_matrix_config.hsv.v;
@@ -666,10 +670,10 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                     if(rgb_light_old) rgb_matrix_config.hsv.v = rgb_light_old;
                     else rgb_matrix_config.hsv.v = (255 - RGB_MATRIX_SPD_STEP * 2);
                 }
-                 
+
             }
             return false;
-            
+
         default:
             return true;
     }
@@ -696,7 +700,7 @@ void timer_pro(void)
     } else if (timer_elapsed32(interval_timer) > 20) {
         interval_timer = timer_read32();
     } else {
-        interval_timer += 10;  
+        interval_timer += 10;
     }
 
     if (rf_link_show_time < RF_LINK_SHOW_TIME)
@@ -718,7 +722,7 @@ void m_londing_eeprom_data(void)
 {
     eeconfig_read_user_datablock(&user_config, 0, sizeof(user_config));
     if (user_config.default_brightness_flag != 0xA5) {
-        rgb_matrix_sethsv(RGB_DEFAULT_COLOUR, 255, RGB_MATRIX_MAXIMUM_BRIGHTNESS - RGB_MATRIX_VAL_STEP * 2);  
+        rgb_matrix_sethsv(RGB_DEFAULT_COLOUR, 255, RGB_MATRIX_MAXIMUM_BRIGHTNESS - RGB_MATRIX_VAL_STEP * 2);
         user_config.default_brightness_flag = 0xA5;
         user_config.ee_side_mode_a           = side_mode_a;
         user_config.ee_side_mode_b           = side_mode_b;
@@ -727,7 +731,7 @@ void m_londing_eeprom_data(void)
         user_config.ee_side_rgb             = side_rgb;
         user_config.ee_side_colour          = side_colour;
         f_dev_sleep_enable                  = true;
-        eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));  
+        eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
     } else {
         side_mode_a   = user_config.ee_side_mode_a;
         side_mode_b   = user_config.ee_side_mode_b;
@@ -744,7 +748,7 @@ void m_londing_eeprom_data(void)
  */
 void keyboard_post_init_kb(void)
 {
-    m_gpio_init();      
+    m_gpio_init();
     rf_uart_init();
     wait_ms(500);
     rf_device_init();

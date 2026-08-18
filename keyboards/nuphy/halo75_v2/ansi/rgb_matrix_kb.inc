@@ -1,12 +1,14 @@
 RGB_MATRIX_EFFECT(game_mode)
 RGB_MATRIX_EFFECT(position_mode)
 RGB_MATRIX_EFFECT(hgjazhgj)
+RGB_MATRIX_EFFECT(battery_link_status)
 
 #ifdef RGB_MATRIX_CUSTOM_EFFECT_IMPLS
 
 #include "matrix.h"
 
 extern rgb_config_t rgb_matrix_config;
+extern DEV_INFO_STRUCT dev_info;
 
 #define HGJAZHGJ_KEY_LED_COUNT 83
 
@@ -101,6 +103,22 @@ static bool position_mode(effect_params_t* params) {
     rgb_matrix_set_color(50, rgb.r, rgb.g, rgb.b);      // F
     rgb_matrix_set_color(53, rgb.r, rgb.g, rgb.b);      // J
     rgb_matrix_set_color(72, rgb.r, rgb.g, rgb.b);      // up
+
+    return rgb_matrix_check_finished_leds(led_max);
+}
+
+static bool battery_link_status(effect_params_t* params) {
+    RGB_MATRIX_USE_LIMITS(led_min, led_max);
+
+    uint8_t battery = MIN(dev_info.rf_baterry, 100);
+    uint8_t tens_led = battery >= 10 ? battery / 10 : 0;
+    uint8_t ones_led = battery % 10 == 0 ? 26 : 16 + battery % 10;
+    uint8_t link_led = 32 + MIN(dev_info.link_mode, LINK_USB);
+
+    for (uint8_t i = led_min; i < led_max && i < HGJAZHGJ_KEY_LED_COUNT; i++) {
+        bool enabled = (tens_led != 0 && i == tens_led) || i == ones_led || i == link_led;
+        rgb_matrix_set_color(i, enabled ? 0xFF : 0x00, enabled ? 0xFF : 0x00, enabled ? 0xFF : 0x00);
+    }
 
     return rgb_matrix_check_finished_leds(led_max);
 }
