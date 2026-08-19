@@ -504,14 +504,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
-        case MAC_TASK:
-            if (record->event.pressed) {
-                host_consumer_send(0x029F);
-            } else {
-                host_consumer_send(0);
-            }
-            return false;
-
         case MAC_SEARCH:
             if (record->event.pressed) {
                 register_code(KC_LGUI);
@@ -530,14 +522,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
-        case MAC_CONSOLE:
-            if (record->event.pressed) {
-                host_consumer_send(0x02A0);
-            } else {
-                host_consumer_send(0);
-            }
-            return false;
-
         case MAC_DND:
             if (record->event.pressed) {
                 host_system_send(0x9b);
@@ -551,7 +535,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 register_code(KC_LGUI);
                 register_code(KC_LSFT);
                 register_code(KC_3);
-                wait_ms(20);
+            } else {
                 unregister_code(KC_3);
                 unregister_code(KC_LSFT);
                 unregister_code(KC_LGUI);
@@ -560,26 +544,13 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
         case MAC_PRTA:
             if (record->event.pressed) {
-                // win
-                if (keymap_config.nkro) {
-                    register_code(KC_LGUI);
-                    register_code(KC_LSFT);
-                    register_code(KC_S);
-                    wait_ms(20);
-                    unregister_code(KC_S);
-                    unregister_code(KC_LSFT);
-                    unregister_code(KC_LGUI);
-                }
-                // mac
-                else {
-                    register_code(KC_LGUI);
-                    register_code(KC_LSFT);
-                    register_code(KC_4);
-                    wait_ms(20);
-                    unregister_code(KC_4);
-                    unregister_code(KC_LSFT);
-                    unregister_code(KC_LGUI);
-                }
+                register_code(KC_LGUI);
+                register_code(KC_LSFT);
+                register_code(KC_4);
+            } else {
+                unregister_code(KC_4);
+                unregister_code(KC_LSFT);
+                unregister_code(KC_LGUI);
             }
             return false;
 
@@ -637,8 +608,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
         case SLEEP_MODE:
             if (record->event.pressed) {
-                if(f_dev_sleep_enable) f_dev_sleep_enable = false;
-                else f_dev_sleep_enable = true;
+                f_dev_sleep_enable = !f_dev_sleep_enable;
                 f_sleep_show       = 1;
                 eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
             }
@@ -648,7 +618,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 rgb_mode_before_bat_show = rgb_matrix_get_mode();
                 rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_battery_link_status);
-            } else if (f_bat_show) {
+            } else {
                 rgb_matrix_mode_noeeprom(rgb_mode_before_bat_show);
             }
             return false;
@@ -660,15 +630,12 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case RM_TOGG:
             if (record->event.pressed) {
                 rgb_matrix_enable();
-                if(rgb_matrix_config.hsv.v)
-                {
+                if(rgb_matrix_config.hsv.v) {
                     rgb_light_old = rgb_matrix_config.hsv.v;
                     rgb_matrix_config.hsv.v = 0;
-                }
-                else
-                {
+                } else {
                     if(rgb_light_old) rgb_matrix_config.hsv.v = rgb_light_old;
-                    else rgb_matrix_config.hsv.v = (255 - RGB_MATRIX_SPD_STEP * 2);
+                    else rgb_matrix_config.hsv.v = ~(RGB_MATRIX_SPD_STEP << 1);
                 }
 
             }

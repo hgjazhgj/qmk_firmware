@@ -5,7 +5,7 @@ RGB_MATRIX_EFFECT(battery_link_status)
 
 #ifdef RGB_MATRIX_CUSTOM_EFFECT_IMPLS
 
-#include "matrix.h"
+#include "ansi.h"
 
 extern rgb_config_t rgb_matrix_config;
 extern DEV_INFO_STRUCT dev_info;

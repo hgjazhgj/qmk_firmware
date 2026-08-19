@@ -33,11 +33,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define RGB_DRIVER_SDB1             C6
 #define RGB_DRIVER_SDB2             C7
 
-#define SERIAL_DRIVER               SD1
-#define SD1_TX_PIN                  B6
-#define SD1_TX_PAL_MODE             0
-#define SD1_RX_PIN                  B7
-#define SD1_RX_PAL_MODE             0
+#define UART_DRIVER                 SD1
+#define UART_TX_PIN                 B6
+#define UART_TX_PAL_MODE            0
+#define UART_RX_PIN                 B7
+#define UART_RX_PAL_MODE            0
 
 // This is a 7-bit address, that gets left-shifted and bit 0
 // set to 0 for write, 1 for read (as per I2C protocol)
@@ -46,12 +46,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 0b1110111 AD <-> VCC
 // 0b1110101 AD <-> SCL
 // 0b1110110 AD <-> SDA
-#define DRIVER_ADDR_1              0b1010000
-#define DRIVER_ADDR_2              0b1010011
-#define IS31FL3733_I2C_ADDRESS_1   DRIVER_ADDR_1
-#define IS31FL3733_I2C_ADDRESS_2   DRIVER_ADDR_2
+#define IS31FL3733_I2C_ADDRESS_1   0b1010000
+#define IS31FL3733_I2C_ADDRESS_2   0b1010011
 
-#define ISSI_TIMEOUT               1
+#define IS31FL3733_I2C_TIMEOUT     1
 
 /* I2C Alternate function settings */
 #define I2C_DRIVER                 I2CD1
@@ -69,10 +67,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define I2C1_TIMINGR_SCLL          0U
 #define I2C1_DUTY_CYCLE            FAST_DUTY_CYCLE_16_9
 
-#define DRIVER_COUNT               2
-#define DRIVER_1_LED_TOTAL         64
-#define DRIVER_2_LED_TOTAL         64
-#define RGB_MATRIX_LED_COUNT       (DRIVER_1_LED_TOTAL + DRIVER_2_LED_TOTAL)
+#define RGB_MATRIX_LED_COUNT       128
 
 #define RGB_MATRIX_DEFAULT_MODE     RGB_MATRIX_CUSTOM_position_mode
 #define RGB_DEFAULT_COLOUR          168
