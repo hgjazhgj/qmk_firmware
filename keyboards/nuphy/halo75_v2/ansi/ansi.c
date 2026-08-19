@@ -55,7 +55,7 @@ extern uint8_t bytekb_report_buf[8];
 
 bool f_uart_ack         = 0;
 bool f_bat_show         = 0;
-bool f_bat_hold         = 0;
+bool f_bat_hold         = 1;
 bool f_chg_show         = 1;
 bool f_sys_show         = 0;
 bool f_sleep_show       = 0;

@@ -1055,8 +1055,6 @@ void device_reset_init(void)
     side_play_cnt   = 0;
     side_play_timer = timer_read32();
 
-    f_bat_hold = true;
-
     rgb_matrix_enable();
     rgb_matrix_mode(RGB_MATRIX_DEFAULT_MODE);
     rgb_matrix_set_speed(255 - RGB_MATRIX_SPD_STEP * 2);
