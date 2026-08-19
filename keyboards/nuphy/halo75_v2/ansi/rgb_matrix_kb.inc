@@ -110,13 +110,13 @@ static bool position_mode(effect_params_t* params) {
 static bool battery_link_status(effect_params_t* params) {
     RGB_MATRIX_USE_LIMITS(led_min, led_max);
 
-    uint8_t battery = MIN(dev_info.rf_baterry, 100);
-    uint8_t tens_led = battery >= 10 ? battery / 10 : 0;
+    uint8_t battery = dev_info.rf_baterry;
+    uint8_t tens_led = battery > 100 ? 11: battery / 10;
     uint8_t ones_led = battery % 10 == 0 ? 26 : 16 + battery % 10;
     uint8_t link_led = 32 + MIN(dev_info.link_mode, LINK_USB);
 
     for (uint8_t i = led_min; i < led_max && i < HGJAZHGJ_KEY_LED_COUNT; i++) {
-        bool enabled = (tens_led != 0 && i == tens_led) || i == ones_led || i == link_led;
+        bool enabled = tens_led != 0 && i == tens_led || i == ones_led || i == link_led;
         rgb_matrix_set_color(i, enabled ? 0xFF : 0x00, enabled ? 0xFF : 0x00, enabled ? 0xFF : 0x00);
     }
 

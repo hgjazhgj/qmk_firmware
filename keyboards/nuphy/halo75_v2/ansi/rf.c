@@ -258,9 +258,7 @@ void RF_Protocol_Receive(void) {
                     }
 
                     dev_info.rf_charge = Usart_Mgr.RXDBuf[7];
-
-                    if (Usart_Mgr.RXDBuf[8] <= 100) dev_info.rf_baterry = Usart_Mgr.RXDBuf[8];
-                    if (dev_info.rf_charge & 0x01) dev_info.rf_baterry = 100;
+                    dev_info.rf_baterry = Usart_Mgr.RXDBuf[8];
                 }
                 else {
                     if (dev_info.rf_state != RF_INVALID) {
