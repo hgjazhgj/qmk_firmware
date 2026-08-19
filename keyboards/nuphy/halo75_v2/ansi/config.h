@@ -69,14 +69,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define RGB_MATRIX_LED_COUNT       128
 
-#define RGB_MATRIX_DEFAULT_MODE     RGB_MATRIX_CUSTOM_position_mode
-#define RGB_DEFAULT_COLOUR          168
+#define RGB_MATRIX_DEFAULT_MODE    RGB_MATRIX_CUSTOM_hgjazhgj
+#define RGB_DEFAULT_COLOUR         168
 
-#define RGB_MATRIX_SLEEP                          // turn off effects when suspended
-
-#define RGB_MATRIX_FRAMEBUFFER_EFFECTS
-#define RGB_MATRIX_KEYPRESSES
-#define RGB_MATRIX_KEYRELEASES
+#define RGB_MATRIX_SLEEP           // turn off effects when USB suspended
+#define RGB_TRIGGER_ON_KEYDOWN
 
 #define IS31FL3733_SW_PULLUP   IS31FL3733_PUR_0K5_OHM
 #define IS31FL3733_CS_PULLDOWN IS31FL3733_PDR_0K5_OHM

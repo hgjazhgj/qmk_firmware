@@ -18,6 +18,7 @@
 - `keyboard.json` RGB coordinates are integers, and unused LED entries include the coordinates required by the current schema.
 - constant name updates in `config.h` due to removed compatibility layer that translates.
 - `MAC_TASK` and `MAC_CONSOLE` replaced to QMK official implementation.
+- enabled all available QMK pre-defined light effects.
 
 然后加入了一些我想要的功能，包括：
 
