@@ -585,6 +585,12 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
+        case SIDE_HUD:
+            if (record->event.pressed) {
+                side_colour_control(0);
+            }
+            return false;
+
         case SIDE_SPI:
             if (record->event.pressed) {
                 light_speed_control(1);
@@ -610,7 +616,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 f_dev_sleep_enable = !f_dev_sleep_enable;
                 f_sleep_show       = 1;
-                eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
             }
             return false;
 

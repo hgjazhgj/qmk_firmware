@@ -13,7 +13,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [1] = LAYOUT(
  BAT_SHOW,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12, MAC_PRT,_______,SLEEP_MODE,
   KC_NUM,   KC_P1,   KC_P2,   KC_P3,   KC_P4,   KC_P5,   KC_P6,   KC_P7,   KC_P8,   KC_P9,   KC_P0, KC_PMNS, KC_PPLS,    _______,       RM_PREV,
- _______,  LNK_RF,LNK_BLE1,LNK_BLE2,LNK_BLE3, _______, _______, _______, _______, _______, _______, _______, _______,      RM_TOGG,     RM_NEXT,
+ _______,  LNK_RF,LNK_BLE1,LNK_BLE2,LNK_BLE3, LNK_USB, _______, _______, _______, _______, _______, _______, _______,      RM_TOGG,     RM_NEXT,
  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,           KC_PENT,         RM_HUEU,
  _______, _______, _______, _______, _______, _______, _______, _______, KC_PAST, KC_PDOT, KC_PSLS,        _______,            RM_VALU, RM_HUED,
  _______, KC_ROPT, KC_RCMD,                            _______,                                       MO(3),   MO(4), RM_SPDD, RM_VALD, RM_SPDU),
@@ -29,7 +29,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [3] = LAYOUT(
  BAT_SHOW,KC_BRID, KC_BRIU, MS_BTN1, MS_BTN2, MS_BTN3, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD, KC_VOLU, KC_SCRL,KC_BRK,SLEEP_MODE,
   KC_NUM,   KC_P1,   KC_P2,   KC_P3,   KC_P4,   KC_P5,   KC_P6,   KC_P7,   KC_P8,   KC_P9,   KC_P0, KC_PMNS, KC_PPLS,    _______,       RM_PREV,
- _______,  LNK_RF,LNK_BLE1,LNK_BLE2,LNK_BLE3, _______, _______, _______, _______, _______, _______, _______, _______,      RM_TOGG,     RM_NEXT,
+ _______,  LNK_RF,LNK_BLE1,LNK_BLE2,LNK_BLE3, LNK_USB, _______, _______, _______, _______, _______, _______, _______,      RM_TOGG,     RM_NEXT,
  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,           KC_PENT,         RM_HUEU,
  _______, _______, _______, _______, _______, _______, _______, _______, KC_PAST, KC_PDOT, KC_PSLS,        _______,            RM_VALU, RM_HUED,
  _______, KC_RWIN, KC_RALT,                            _______,                                       MO(3),   MO(4), RM_SPDD, RM_VALD, RM_SPDU),
@@ -39,7 +39,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,    DEV_RESET,     _______,
  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,      _______,     _______,
  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,           _______,         SIDE_MOD_A,
- _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,        _______,           SIDE_VAI, SIDE_MOD_B,
+ _______, _______, _______, _______, _______, _______, _______, _______,SIDE_HUD,SIDE_HUI, _______,        _______,           SIDE_VAI, SIDE_MOD_B,
  _______, GU_TOGG, _______,                            _______,                                       MO(3),   MO(4),SIDE_SPD,SIDE_VAD, SIDE_SPI),
 };
 
