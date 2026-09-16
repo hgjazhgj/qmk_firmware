@@ -195,3 +195,5 @@ typedef struct
 
 extern user_config_t user_config;
 #define f_dev_sleep_enable  user_config.ee_dev_config.bit0
+
+void set_sleep_state(bool sleeping);

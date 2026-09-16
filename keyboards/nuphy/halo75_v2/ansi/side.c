@@ -129,23 +129,6 @@ extern user_config_t user_config;
 extern uint16_t rf_link_show_time;
 
 /**
- * @brief suspend_power_down_kb
- *
- */
-void suspend_power_down_kb(void)
-{
-    rgb_matrix_set_suspend_state(true);
-}
-
-/**
- * @brief suspend_wakeup_init_kb
- *
- */
-void suspend_wakeup_init_kb(void)
-{
-    rgb_matrix_set_suspend_state(false);
-}
-/**
  * @brief  Adjusting the brightness of side lights.
  * @param  dir: 0 - decrease, 1 - increase.
  * @note  save to eeprom.
@@ -922,9 +905,7 @@ void bat_led_show(void)
 void rgb_matrix_update_pwm_buffers(void);
 void device_reset_show(void)
 {
-    gpio_write_pin_high(DC_BOOST_PIN);
-    gpio_write_pin_high(RGB_DRIVER_SDB1);
-    gpio_write_pin_high(RGB_DRIVER_SDB2);
+    set_sleep_state(false);
     for (int blink_cnt = 0; blink_cnt < 3; blink_cnt++) {
         rgb_matrix_set_color_all(0xFF, 0xFF, 0xFF);
         rgb_matrix_update_pwm_buffers();
@@ -970,9 +951,7 @@ void device_reset_init(void)
  */
 void rgb_test_show(void)
 {
-    gpio_write_pin_high(DC_BOOST_PIN);
-    gpio_write_pin_high(RGB_DRIVER_SDB1);
-    gpio_write_pin_high(RGB_DRIVER_SDB2);
+    set_sleep_state(false);
     rgb_matrix_set_color_all(0xFF, 0x00, 0x00);
     rgb_matrix_update_pwm_buffers();
     wait_ms(1000);
@@ -991,6 +970,11 @@ void m_side_led_show(void)
 {
     static bool flag_power_on         = 1;
     extern bool f_dial_sw_init_ok;
+
+    if (rgb_matrix_get_suspend_state()) {
+        side_play_timer = timer_read32();
+        return;
+    }
 
     side_play_cnt += timer_elapsed32(side_play_timer);
     side_play_timer = timer_read32();

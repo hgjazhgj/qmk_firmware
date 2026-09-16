@@ -27,8 +27,31 @@ extern uint16_t         no_act_time;
 extern bool             f_wakeup_prepare;
 extern bool             f_goto_sleep;
 
-uint8_t uart_send_cmd(uint8_t cmd, uint8_t ack_cnt, uint8_t delayms);
+void set_sleep_state(bool sleeping) {
+    f_wakeup_prepare = sleeping;
+    f_goto_sleep = false;
+    if (sleeping) {
+        // Clear the LED buffers before shutting down the drivers.
+        rgb_matrix_set_suspend_state(true);
+        gpio_write_pin_low(RGB_DRIVER_SDB1);
+        gpio_write_pin_low(RGB_DRIVER_SDB2);
+        gpio_write_pin_low(DC_BOOST_PIN);
+    } else {
+        gpio_write_pin_high(DC_BOOST_PIN);
+        gpio_write_pin_high(RGB_DRIVER_SDB1);
+        gpio_write_pin_high(RGB_DRIVER_SDB2);
+        rgb_matrix_set_suspend_state(false);
+    }
+}
 
+void suspend_power_down_kb(void) {
+    // USB suspend/resume must preserve the lighting state in wireless mode.
+    set_sleep_state(dev_info.link_mode == LINK_USB || f_wakeup_prepare);
+}
+
+void suspend_wakeup_init_kb(void) {
+    set_sleep_state(dev_info.link_mode != LINK_USB && f_wakeup_prepare);
+}
 
 /**
  * @brief  Sleep Handle.
@@ -37,58 +60,52 @@ void Sleep_Handle(void) {
     static uint32_t delay_step_timer = 0;
     static uint8_t  usb_suspend_debounce = 0;
     static uint32_t rf_disconnect_time = 0;
-    static bool     rgb_idle = false;
 
     /* 50ms interval */
     if (timer_elapsed32(delay_step_timer) < 50) return;
     delay_step_timer = timer_read32();
 
-    // Idle process: switch off only the RGB drivers.  Keep the MCU, radio and
-    // USB connection running so the first key after an idle timeout is sent
-    // immediately instead of being consumed by a wake/reconnect sequence.
-    if (f_goto_sleep) {
-        f_goto_sleep = 0;
-
-        if(f_dev_sleep_enable) {
-            gpio_write_pin_low(RGB_DRIVER_SDB1);
-            gpio_write_pin_low(RGB_DRIVER_SDB2);
-            rgb_idle = true;
-        }
-    }
-
-    // Restore the RGB drivers as soon as normal key activity resets the idle
-    // counter.  No radio handshake or USB restart is required.
-    if (rgb_idle && (no_act_time < 10)) {
-        gpio_write_pin_high(RGB_DRIVER_SDB1);
-        gpio_write_pin_high(RGB_DRIVER_SDB2);
-        rgb_idle = false;
-    }
-
-    // sleep check
-    if (f_goto_sleep || rgb_idle)
-        return;
     if (dev_info.link_mode == LINK_USB) {
-        if (USB_DRIVER.state == USB_SUSPENDED) {
-            usb_suspend_debounce++;
-            if (usb_suspend_debounce >= 20) {
-                f_goto_sleep = 1;
-            }
+        // Ignore wireless sleep requests; only an actual USB suspend turns lights off.
+        rf_disconnect_time = 0;
+        if (f_dev_sleep_enable && USB_DRIVER.state == USB_SUSPENDED) {
+            if (usb_suspend_debounce < 20) usb_suspend_debounce++;
         } else {
             usb_suspend_debounce = 0;
         }
-    } else if (dev_info.rf_state == RF_CONNECT) {
+        set_sleep_state(usb_suspend_debounce >= 20);
+        return;
+    }
+
+    usb_suspend_debounce = 0;
+    // Cancel a pending sleep before acting on it when a key or mode switch was used.
+    if (!f_dev_sleep_enable || no_act_time < 10) {
         rf_disconnect_time = 0;
+        set_sleep_state(false);
+        return;
+    }
+
+    if (f_wakeup_prepare) {
+        f_goto_sleep = false;
+        return;
+    }
+    if (dev_info.link_mode != LINK_RF_24) f_goto_sleep = false;
+    if (dev_info.rf_state != RF_DISCONNECT) rf_disconnect_time = 0;
+
+    if (dev_info.rf_state == RF_CONNECT) {
         if (no_act_time >= SLEEP_TIME_DELAY) {
-            f_goto_sleep = 1;
+            f_goto_sleep = true;
         }
-    } else if (rf_linking_time >= LINK_TIMEOUT) {
+    } else if (rf_linking_time >= LINK_TIMEOUT && no_act_time >= LINK_TIMEOUT) {
         rf_linking_time = 0;
-        f_goto_sleep    = 1;
+        f_goto_sleep = true;
     } else if (dev_info.rf_state == RF_DISCONNECT) {
         rf_disconnect_time++;
         if (rf_disconnect_time > 5 * 20) {
             rf_disconnect_time = 0;
-            f_goto_sleep = 1;
+            f_goto_sleep = true;
         }
     }
+
+    if (f_goto_sleep) set_sleep_state(true);
 }
