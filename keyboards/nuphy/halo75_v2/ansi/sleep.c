@@ -30,14 +30,14 @@ extern bool             f_goto_sleep;
 void set_sleep_state(bool sleeping) {
     f_wakeup_prepare = sleeping;
     f_goto_sleep = false;
+    // Keep BOOST powered as in the original light-only idle path. SDB blanks
+    // the LEDs without a power cycle before the next RGB/I2C update.
     if (sleeping) {
         // Clear the LED buffers before shutting down the drivers.
         rgb_matrix_set_suspend_state(true);
         gpio_write_pin_low(RGB_DRIVER_SDB1);
         gpio_write_pin_low(RGB_DRIVER_SDB2);
-        gpio_write_pin_low(DC_BOOST_PIN);
     } else {
-        gpio_write_pin_high(DC_BOOST_PIN);
         gpio_write_pin_high(RGB_DRIVER_SDB1);
         gpio_write_pin_high(RGB_DRIVER_SDB2);
         rgb_matrix_set_suspend_state(false);
