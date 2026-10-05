@@ -24,6 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #undef STM32_I2C_USE_I2C1
 #define STM32_I2C_USE_I2C1 TRUE
 
+// The TIMINGR values in config.h are specified for the 8 MHz HSI clock.
+#undef STM32_I2C1SW
+#define STM32_I2C1SW STM32_I2C1SW_HSI
+
 #undef STM32_I2C_USE_DMA
 #define STM32_I2C_USE_DMA TRUE
 

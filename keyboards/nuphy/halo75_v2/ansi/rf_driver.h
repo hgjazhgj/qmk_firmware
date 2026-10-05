@@ -17,4 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "host_driver.h"
+
 extern host_driver_t rf_host_driver;

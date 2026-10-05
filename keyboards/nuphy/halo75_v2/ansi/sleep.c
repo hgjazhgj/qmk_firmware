@@ -15,21 +15,68 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ansi.h"
+#include "quantum.h"
+#include "board_runtime.h"
+#include "board_settings.h"
+#include "rf.h"
+#include "sleep.h"
 #include "hal_usb.h"
 #include "usb_main.h"
 
-extern user_config_t    user_config;
-extern DEV_INFO_STRUCT  dev_info;
-extern uint16_t         rf_linking_time;
-extern uint16_t         no_act_time;
+// USB device GET_STATUS bit 1 reports the host-enabled remote-wakeup feature.
+// QMK's similarly named constant is private to its ChibiOS protocol source.
+#define BOARD_USB_REMOTE_WAKEUP_STATUS_MASK 0x02U
 
-extern bool             f_wakeup_prepare;
-extern bool             f_goto_sleep;
+typedef struct {
+    bool     sleeping;
+    bool     sleep_requested;
+    uint32_t step_timer;
+    uint8_t  usb_suspend_debounce;
+    uint32_t rf_disconnect_ticks;
+    bool     usb_wakeup_pending;
+    uint32_t usb_wakeup_timer;
+} sleep_context_t;
 
-void set_sleep_state(bool sleeping) {
-    f_wakeup_prepare = sleeping;
-    f_goto_sleep = false;
+static sleep_context_t sleep_context;
+
+void sleep_request(void) {
+    sleep_context.sleep_requested = true;
+}
+
+bool sleep_is_active(void) {
+    return sleep_context.sleeping;
+}
+
+static bool usb_remote_wakeup_allowed(void) {
+    return device_state.link_mode == LINK_USB && USB_DRIVER.state == USB_SUSPENDED && (USB_DRIVER.status & BOARD_USB_REMOTE_WAKEUP_STATUS_MASK);
+}
+
+void sleep_note_keypress(void) {
+    if (!usb_remote_wakeup_allowed()) {
+        sleep_context.usb_wakeup_pending = false;
+    } else if (!sleep_context.usb_wakeup_pending) {
+        sleep_context.usb_wakeup_pending = true;
+        sleep_context.usb_wakeup_timer   = timer_read32();
+    }
+}
+
+static void service_usb_wakeup(void) {
+    if (!usb_remote_wakeup_allowed()) {
+        sleep_context.usb_wakeup_pending = false;
+        return;
+    }
+    // The key was pressed while already suspended. Waiting another 5 ms
+    // guarantees the minimum idle time without delaying the keyboard task.
+    if (sleep_context.usb_wakeup_pending && timer_elapsed32(sleep_context.usb_wakeup_timer) >= 5) {
+        sleep_context.usb_wakeup_pending = false;
+        // The HAL checks suspend again and generates the bounded resume pulse.
+        usbWakeupHost(&USB_DRIVER);
+    }
+}
+
+void sleep_set_active(bool sleeping) {
+    sleep_context.sleeping        = sleeping;
+    sleep_context.sleep_requested = false;
     // Keep BOOST powered as in the original light-only idle path. SDB blanks
     // the LEDs without a power cycle before the next RGB/I2C update.
     if (sleeping) {
@@ -46,66 +93,69 @@ void set_sleep_state(bool sleeping) {
 
 void suspend_power_down_kb(void) {
     // USB suspend/resume must preserve the lighting state in wireless mode.
-    set_sleep_state(dev_info.link_mode == LINK_USB || f_wakeup_prepare);
+    sleep_set_active(device_state.link_mode == LINK_USB || sleep_is_active());
+    suspend_power_down_user();
 }
 
 void suspend_wakeup_init_kb(void) {
-    set_sleep_state(dev_info.link_mode != LINK_USB && f_wakeup_prepare);
+    sleep_context.usb_wakeup_pending = false;
+    sleep_set_active(device_state.link_mode != LINK_USB && sleep_is_active());
+    suspend_wakeup_init_user();
 }
 
 /**
  * @brief  Sleep Handle.
  */
-void Sleep_Handle(void) {
-    static uint32_t delay_step_timer = 0;
-    static uint8_t  usb_suspend_debounce = 0;
-    static uint32_t rf_disconnect_time = 0;
+void sleep_task(void) {
+    // NO_USB_STARTUP_CHECK keeps RF scanning alive and skips QMK's blocking
+    // suspend loop, so this board handles a pressed key's remote wake request.
+    service_usb_wakeup();
 
     /* 50ms interval */
-    if (timer_elapsed32(delay_step_timer) < 50) return;
-    delay_step_timer = timer_read32();
+    if (timer_elapsed32(sleep_context.step_timer) < 50) return;
+    sleep_context.step_timer = timer_read32();
 
-    if (dev_info.link_mode == LINK_USB) {
+    if (device_state.link_mode == LINK_USB) {
         // Ignore wireless sleep requests; only an actual USB suspend turns lights off.
-        rf_disconnect_time = 0;
-        if (f_dev_sleep_enable && USB_DRIVER.state == USB_SUSPENDED) {
-            if (usb_suspend_debounce < 20) usb_suspend_debounce++;
+        sleep_context.rf_disconnect_ticks = 0;
+        if (board_settings_sleep_enabled() && USB_DRIVER.state == USB_SUSPENDED) {
+            if (sleep_context.usb_suspend_debounce < 20) sleep_context.usb_suspend_debounce++;
         } else {
-            usb_suspend_debounce = 0;
+            sleep_context.usb_suspend_debounce = 0;
         }
-        set_sleep_state(usb_suspend_debounce >= 20);
+        sleep_set_active(sleep_context.usb_suspend_debounce >= 20);
         return;
     }
 
-    usb_suspend_debounce = 0;
+    sleep_context.usb_suspend_debounce = 0;
     // Cancel a pending sleep before acting on it when a key or mode switch was used.
-    if (!f_dev_sleep_enable || no_act_time < 10) {
-        rf_disconnect_time = 0;
-        set_sleep_state(false);
+    if (!board_settings_sleep_enabled() || board_idle_ticks() < 10) {
+        sleep_context.rf_disconnect_ticks = 0;
+        sleep_set_active(false);
         return;
     }
 
-    if (f_wakeup_prepare) {
-        f_goto_sleep = false;
+    if (sleep_context.sleeping) {
+        sleep_context.sleep_requested = false;
         return;
     }
-    if (dev_info.link_mode != LINK_RF_24) f_goto_sleep = false;
-    if (dev_info.rf_state != RF_DISCONNECT) rf_disconnect_time = 0;
+    if (device_state.link_mode != LINK_RF_24) sleep_context.sleep_requested = false;
+    if (device_state.rf_state != RF_DISCONNECT) sleep_context.rf_disconnect_ticks = 0;
 
-    if (dev_info.rf_state == RF_CONNECT) {
-        if (no_act_time >= SLEEP_TIME_DELAY) {
-            f_goto_sleep = true;
+    if (device_state.rf_state == RF_CONNECT) {
+        if (board_idle_ticks() >= SLEEP_TIME_DELAY) {
+            sleep_request();
         }
-    } else if (rf_linking_time >= LINK_TIMEOUT && no_act_time >= LINK_TIMEOUT) {
-        rf_linking_time = 0;
-        f_goto_sleep = true;
-    } else if (dev_info.rf_state == RF_DISCONNECT) {
-        rf_disconnect_time++;
-        if (rf_disconnect_time > 5 * 20) {
-            rf_disconnect_time = 0;
-            f_goto_sleep = true;
+    } else if (rf_link_elapsed_ticks() >= LINK_TIMEOUT && board_idle_ticks() >= LINK_TIMEOUT) {
+        rf_reset_link_timer();
+        sleep_request();
+    } else if (device_state.rf_state == RF_DISCONNECT) {
+        sleep_context.rf_disconnect_ticks++;
+        if (sleep_context.rf_disconnect_ticks > 5 * 20) {
+            sleep_context.rf_disconnect_ticks = 0;
+            sleep_request();
         }
     }
 
-    if (f_goto_sleep) set_sleep_state(true);
+    if (sleep_context.sleep_requested) sleep_set_active(true);
 }

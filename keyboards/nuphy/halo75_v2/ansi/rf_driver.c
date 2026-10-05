@@ -15,13 +15,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "host_driver.h"
 #include "rf_driver.h"
-#include "host.h"
-#include "ansi.h"
-
-/* Variable declaration */
-extern DEV_INFO_STRUCT dev_info;
+#include "board_runtime.h"
+#include "rf_reports.h"
 
 /* Host driver */
 static uint8_t rf_keyboard_leds(void);
@@ -31,15 +27,8 @@ static void    rf_send_mouse(report_mouse_t *report);
 static void    rf_send_extra(report_extra_t *report);
 host_driver_t  rf_host_driver = {rf_keyboard_leds, rf_send_keyboard, rf_send_nkro, rf_send_mouse, rf_send_extra};
 
-/* defined in rf.c */
-extern void uart_send_report_keyboard(report_keyboard_t *report);
-extern void uart_send_report_nkro(report_nkro_t *report);
-extern void uart_send_mouse_report(report_mouse_t *report);
-extern void uart_send_consumer_report(report_extra_t *report);
-extern void uart_send_system_report(report_extra_t *report);
-
 static uint8_t rf_keyboard_leds(void) {
-    return dev_info.rf_led;
+    return device_state.keyboard_leds;
 }
 
 static void rf_send_keyboard(report_keyboard_t *report) {

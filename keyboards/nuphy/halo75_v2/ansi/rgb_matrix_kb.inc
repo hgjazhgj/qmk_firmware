@@ -5,10 +5,10 @@ RGB_MATRIX_EFFECT(battery_link_status)
 
 #ifdef RGB_MATRIX_CUSTOM_EFFECT_IMPLS
 
-#include "ansi.h"
+#include "board_runtime.h"
+#include "matrix.h"
 
 extern rgb_config_t rgb_matrix_config;
-extern DEV_INFO_STRUCT dev_info;
 
 #define HGJAZHGJ_KEY_LED_COUNT 83
 
@@ -110,10 +110,10 @@ static bool position_mode(effect_params_t* params) {
 static bool battery_link_status(effect_params_t* params) {
     RGB_MATRIX_USE_LIMITS(led_min, led_max);
 
-    uint8_t battery = dev_info.rf_baterry;
+    uint8_t battery = device_state.battery_percent;
     uint8_t tens_led = battery > 100 ? 11: battery / 10;
     uint8_t ones_led = battery % 10 == 0 ? 26 : 16 + battery % 10;
-    uint8_t link_led = 32 + dev_info.link_mode;
+    uint8_t link_led = 32 + device_state.link_mode;
 
     for (uint8_t i = led_min; i < led_max && i < HGJAZHGJ_KEY_LED_COUNT; i++) {
         bool enabled = (tens_led != 0 && i == tens_led) || i == ones_led || i == link_led;
